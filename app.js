@@ -238,6 +238,10 @@ function renderList() {
     var li = document.createElement('li');
     li.className = 'feedback-item';
     li.setAttribute('data-id', item.id);
+    // 06.4 键盘可达：卡片可通过 Tab 聚焦，Enter 或空格与鼠标点击走同一个 openDetail
+    li.setAttribute('role', 'button');
+    li.setAttribute('tabindex', '0');
+    li.setAttribute('aria-label', '查看反馈 ' + item.id + '：' + item.summary);
 
     var top = document.createElement('div');
     top.className = 'item-top';
@@ -717,6 +721,22 @@ exportBtn.addEventListener('click', exportCsv);
 listEl.addEventListener('click', function (e) {
   var li = e.target.closest ? e.target.closest('.feedback-item') : null;
   if (li) {
+    openDetail(li.getAttribute('data-id'));
+  }
+});
+
+// 06.4 键盘操作：事件委托监听 keydown，Enter 或空格触发与鼠标点击相同的 openDetail，不复制打开逻辑
+listEl.addEventListener('keydown', function (e) {
+  var li = e.target.closest ? e.target.closest('.feedback-item') : null;
+  if (!li) {
+    return;
+  }
+  var key = e.key || '';
+  if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+    // 空格默认会滚动页面，仅空格需要阻止默认行为
+    if (key === ' ' || key === 'Spacebar') {
+      e.preventDefault();
+    }
     openDetail(li.getAttribute('data-id'));
   }
 });
