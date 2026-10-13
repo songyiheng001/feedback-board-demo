@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户反馈工作台</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="page">
+
+    <!-- 列表视图 -->
+    <section id="listView" class="view">
+      <header class="topbar">
+        <h1 class="page-title">用户反馈工作台</h1>
+        <div class="topbar-side">
+          <span class="demo-tag">本机保存 · 只在这台设备的这个浏览器里</span>
+          <button type="button" class="export-btn" id="exportBtn">导出当前列表（6 条）</button>
+          <button type="button" class="add-btn" id="addFeedbackBtn">新增反馈</button>
+        </div>
+      </header>
+
+      <p class="sample-note" id="sampleNote">页面中的 6 条反馈均为虚构教学样例，不含任何真实反馈。</p>
+
+      <p class="storage-error" id="storageError" hidden></p>
+
+      <div class="filter-group">
+        <span class="filter-label">分类</span>
+        <nav class="filters" id="categoryFilters">
+          <button type="button" class="filter-btn is-active" data-category="全部">全部</button>
+          <button type="button" class="filter-btn" data-category="问题">问题</button>
+          <button type="button" class="filter-btn" data-category="建议">建议</button>
+          <button type="button" class="filter-btn" data-category="表扬">表扬</button>
+          <button type="button" class="filter-btn" data-category="其他">其他</button>
+        </nav>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">来源</span>
+        <nav class="filters" id="sourceFilters">
+          <button type="button" class="filter-btn is-active" data-source="全部">全部</button>
+          <button type="button" class="filter-btn" data-source="用户访谈">用户访谈</button>
+          <button type="button" class="filter-btn" data-source="客服工单">客服工单</button>
+          <button type="button" class="filter-btn" data-source="应用内评价">应用内评价</button>
+          <button type="button" class="filter-btn" data-source="邮件反馈">邮件反馈</button>
+          <button type="button" class="filter-btn" data-source="内部群">内部群</button>
+        </nav>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">状态</span>
+        <nav class="filters" id="statusFilters">
+          <button type="button" class="filter-btn is-active" data-filter-status="全部">全部</button>
+          <button type="button" class="filter-btn" data-filter-status="待处理">待处理</button>
+          <button type="button" class="filter-btn" data-filter-status="处理中">处理中</button>
+          <button type="button" class="filter-btn" data-filter-status="已解决">已解决</button>
+        </nav>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label" for="keywordInput">关键字</label>
+        <input type="text" id="keywordInput" class="keyword-input" placeholder="查找反馈内容里的词" autocomplete="off">
+      </div>
+
+      <div class="active-filters" id="activeFilters" hidden>
+        <span class="active-count" id="activeCount"></span>
+        <div class="active-chips" id="activeChips"></div>
+      </div>
+
+      <!-- AI 摘要：只总结四个条件筛选后的当前列表，不保存、不导出 -->
+      <section class="ai-summary" id="aiSummaryBox">
+        <button type="button" class="ai-summary-btn" id="summaryBtn">生成摘要（当前 6 条）</button>
+        <p class="ai-summary-status" id="summaryStatus" hidden></p>
+        <div class="ai-summary-result" id="summaryResult" hidden>
+          <p class="ai-summary-text" id="summaryText"></p>
+          <p class="ai-summary-ids" id="summaryIds"></p>
+          <p class="ai-summary-tip">这是概览，不是依据；要判断请回到原文那一条。</p>
+        </div>
+      </section>
+
+      <ul class="feedback-list" id="feedbackList"></ul>
+
+      <!-- 空状态一：筛选后没有匹配 -->
+      <div class="empty-state" id="noMatchState" hidden>
+        <p class="empty-text" id="noMatchText"></p>
+        <button type="button" class="clear-filter-btn" id="clearFilterBtn">清除筛选</button>
+      </div>
+
+      <!-- 空状态二：系统里一条数据都没有 -->
+      <div class="empty-state" id="noDataState" hidden>
+        <p class="empty-text">还没有收到反馈</p>
+      </div>
+    </section>
+
+    <!-- 新增反馈视图（同页切换） -->
+    <section id="formView" class="view" hidden>
+      <form class="detail-card form-card" id="feedbackForm">
+        <h2 class="form-title">新增反馈</h2>
+
+        <div class="form-field">
+          <label for="contentInput">反馈内容<span class="required">*</span></label>
+          <textarea id="contentInput" rows="7" placeholder="请填写用户的原始反馈文字"></textarea>
+          <p class="form-error" id="contentError" hidden>反馈内容不能为空，请填写后再保存</p>
+        </div>
+
+        <div class="form-field">
+          <label for="sourceInput">反馈来源<span class="required">*</span></label>
+          <select id="sourceInput">
+            <option value="" selected disabled>请选择来源</option>
+            <option value="用户访谈">用户访谈</option>
+            <option value="客服工单">客服工单</option>
+            <option value="应用内评价">应用内评价</option>
+            <option value="邮件反馈">邮件反馈</option>
+            <option value="内部群">内部群</option>
+          </select>
+          <p class="form-error" id="sourceError" hidden>请选择反馈来源</p>
+        </div>
+
+        <div class="form-field">
+          <label for="categoryInput">反馈分类</label>
+          <select id="categoryInput">
+            <option value="" selected>暂不分类</option>
+            <option value="问题">问题</option>
+            <option value="建议">建议</option>
+            <option value="表扬">表扬</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+
+        <p class="form-note">提交后处理状态自动设为“待处理”，提交时间自动记录</p>
+
+        <div class="form-actions">
+          <button type="button" class="back-btn" id="cancelBtn">取消</button>
+          <button type="submit" class="save-btn" id="saveBtn">保存反馈</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 详情视图（同页切换，不新增 HTML 文件） -->
+    <section id="detailView" class="view" hidden>
+      <div class="detail-top">
+        <button type="button" id="backBtn" class="back-btn">返回列表</button>
+        <button type="button" id="editBtn" class="add-btn">编辑反馈</button>
+      </div>
+
+      <article class="detail-card">
+        <div class="detail-meta" id="detailMeta"></div>
+        <p class="detail-content" id="detailContent"></p>
+
+        <div class="status-area">
+          <span class="status-area-label">处理状态</span>
+          <div class="status-options" id="statusOptions">
+            <button type="button" class="status-option" data-status="待处理">待处理</button>
+            <button type="button" class="status-option" data-status="处理中">处理中</button>
+            <button type="button" class="status-option" data-status="已解决">已解决</button>
+          </div>
+        </div>
+
+        <!-- AI 建议（分类）：待确认，采纳后才写入 category 并正式保存 -->
+        <div class="ai-classify" id="aiClassifyBox">
+          <span class="status-area-label">AI 建议（分类）</span>
+          <button type="button" class="ai-classify-btn" id="classifyBtn">要个分类建议</button>
+          <p class="ai-classify-status" id="classifyStatus" hidden></p>
+          <div class="ai-classify-result" id="classifyResult" hidden>
+            <p class="ai-classify-line">
+              建议分类：<span class="ai-classify-value" id="classifyValue"></span>
+              <span class="ai-classify-badge">待确认</span>
+            </p>
+            <div class="ai-classify-actions">
+              <button type="button" class="save-btn-mini" id="adoptBtn">采纳</button>
+              <button type="button" class="back-btn-mini" id="rejectBtn">不采纳</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 编辑反馈视图（同页切换；只有分类和状态可改） -->
+    <section id="editView" class="view" hidden>
+      <form class="detail-card form-card" id="editForm">
+        <h2 class="form-title">编辑反馈</h2>
+
+        <div class="form-field">
+          <label>反馈编号</label>
+          <p class="readonly-field" id="editId"></p>
+        </div>
+
+        <div class="form-field">
+          <label>反馈内容<span class="readonly-note">用户原话，不可修改</span></label>
+          <p class="readonly-field readonly-content" id="editContent"></p>
+        </div>
+
+        <div class="form-field">
+          <label>反馈来源</label>
+          <p class="readonly-field" id="editSource"></p>
+        </div>
+
+        <div class="form-field">
+          <label>提交时间</label>
+          <p class="readonly-field" id="editCreatedAt"></p>
+        </div>
+
+        <div class="form-field">
+          <label for="editCategory">反馈分类</label>
+          <select id="editCategory">
+            <option value="">暂不分类</option>
+            <option value="问题">问题</option>
+            <option value="建议">建议</option>
+            <option value="表扬">表扬</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="editStatus">处理状态</label>
+          <select id="editStatus">
+            <option value="待处理">待处理</option>
+            <option value="处理中">处理中</option>
+            <option value="已解决">已解决</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="back-btn" id="editCancelBtn">取消</button>
+          <button type="submit" class="save-btn" id="editSaveBtn">保存修改</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
